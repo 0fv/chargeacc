@@ -1,0 +1,134 @@
+{% macro table(phone_num,depart,id) %}
+    <tr id="{{ id }}",style="display:list-item;">
+    <td>{{ phone_num }}</td>
+    <td>{{ depart }}</td>
+    <td>{{ id }}</td>
+    </tr>
+{% endmacro %}
+{% macro botton(id) %}
+    <li role="presentation" id="{{ id }}" name="{{ id }}">
+       &nbsp;&nbsp;{{ id }}
+    </li>
+{% endmacro %}
+{% extends 'base.html' %}
+{% block title %}电话部门关系{% endblock %}
+{% block body %}
+    <div class="container">
+    <div class="row">
+        <div>
+            <form method=post enctype=multipart/form-data action="{{ url_for('manage.relation_file') }}">
+                <input id="input-b2" name="input-b2" type="file" class="file" data-show-preview="false">
+            </form>
+        </div>
+    </div>
+    <br>
+    <div class="row">
+    <form action="{{ url_for('manage.relation_file') }}" method="post">
+        <div class="form-group">
+            {{ form.multi_select.label }}
+            <small class="text-muted">{{ form.multi_select.description }}</small>
+            {{ form.multi_select(class_="form-control") }}
+            {% for error in form.multi_select.errors %}
+                <span class="label label-danger">{{ error }}</span>
+            {% endfor %}
+        {{ form.submit(class_="btn btn-danger") }}
+        </form>
+        </div>
+    </div>
+     <br>
+        <div style="display:inline;">
+            <input class="form-control" id="myInput" type="text" placeholder="Search..">
+            <br>
+            <table class="table table-bordered table-striped" name="table1">
+                <thead>
+                <tr>
+                    <th>号码</th>
+                    <th>所属部门</th>
+                    <th>对应关系</th>
+                </tr>
+                </thead>
+                <tbody id="myTable">
+                {% for relation in relations %}
+                    {{  table(relation.phone_num,relation.depart,relation.id) }}
+                {% endfor %}
+                </tbody>
+
+            </table>
+        </div>
+        </div>
+    </div>
+<script type="text/javascript">
+$(document).ready(function(){
+  $("#myInput").on("keyup", function() {
+    var value = $(this).val().toLowerCase();
+    $("#myTable tr").filter(function() {
+      $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1)
+    });
+  });
+});
+
+$('.dropdown-menu').on('click', function(e) {
+	var $target = $(e.target);
+	$target.is('li') && $('#text').text($target.text())
+});
+$(document).ready(function () {
+    DeleteTask.start();
+});
+    $(document).ready(function() {
+        // https://select2.github.io/examples.html
+        $("select").select2({});
+        function formatRepo (repo) {
+            if (repo.loading) return repo.text;
+            var markup = "<div class='select2-result-repository clearfix'>" +
+            "<div class='select2-result-repository__avatar'><img src='" + repo.owner.avatar_url + "' /></div>" +
+            "<div class='select2-result-repository__meta'>" +
+            "<div class='select2-result-repository__title'>" + repo.full_name + "</div>";
+
+            if (repo.description) {
+                markup += "<div class='select2-result-repository__description'>" + repo.description + "</div>";
+            }
+            markup += "<div class='select2-result-repository__statistics'>" +
+            "<div class='select2-result-repository__forks'><i class='fa fa-flash'></i> " + repo.forks_count + " Forks</div>" +
+            "<div class='select2-result-repository__stargazers'><i class='fa fa-star'></i> " + repo.stargazers_count + " Stars</div>" +
+            "<div class='select2-result-repository__watchers'><i class='fa fa-eye'></i> " + repo.watchers_count + " Watchers</div>" +
+            "</div>" +
+            "</div></div>";
+            return markup;
+        }
+        function formatRepoSelection (repo) {
+            return repo.full_name || repo.text;
+        }
+        $("#single_dynamic_select").select2({
+            ajax: {
+                url: "https://api.github.com/search/repositories",
+                dataType: 'json',
+                delay: 250,
+                data: function (params) {
+                    return {
+                        q: params.term, // search term
+                        page: params.page
+                    };
+                },
+                processResults: function (data, params) {
+                    // parse the results into the format expected by Select2
+                    // since we are using custom formatting functions we do not need to
+                    // alter the remote JSON data, except to indicate that infinite
+                    // scrolling can be used
+                    params.page = params.page || 1;
+                    return {
+                        results: data.items,
+                        pagination: {
+                            more: (params.page * 30) < data.total_count
+                        }
+                    };
+                },
+                cache: true
+            },
+            escapeMarkup: function (markup) { return markup; }, // let our custom formatter work
+            minimumInputLength: 1,
+            templateResult: formatRepo, // omitted for brevity, see the source of this page
+            templateSelection: formatRepoSelection // omitted for brevity, see the source of this page
+        });
+    });
+</script>
+{% endblock %}
