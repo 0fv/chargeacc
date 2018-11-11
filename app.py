@@ -3,8 +3,8 @@ from werkzeug.utils import secure_filename
 from config import DevConfig
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf import FlaskForm
-from wtforms.validators import DataRequired
-from wtforms import SelectMultipleField,SubmitField
+from flask_uploads import UploadSet,configure_uploads
+from wtforms import SelectMultipleField,SubmitField,SelectField
 import misc
 import os
 
@@ -12,7 +12,9 @@ import os
 app = Flask(__name__)
 app.config.from_object(DevConfig)
 db = SQLAlchemy(app)
-ALLOWED_EXTENSIONS = set(['xlsx','xls','csv'])
+ALLOWED_EXTENSIONS = set(['csv'])
+doc = UploadSet(extensions=('xlsx','xls'))
+configure_uploads(app, (doc,))
 
 manage_blueprint=Blueprint(
     'manage',
@@ -33,7 +35,11 @@ class Select2MultipleField(SelectMultipleField):
         else:
             self.data = ""
 
-class DelForm(FlaskForm):
+class ChoiceForm(FlaskForm):
+    single_select = SelectField(u"选择对应关系", [],
+        choices = misc.find_id(),
+        description=u"选择",
+        render_kw={})
     multi_select = Select2MultipleField(u"删除关系文件", [],
         choices= misc.find_id(),
         description=u"可多选",
@@ -64,34 +70,21 @@ def redirect_to_upload():
 
 @manage_blueprint.route('/upload', methods=['GET', 'POST'])
 def upload_file():
+    form= ChoiceForm(request.form)
     if request.method == 'POST':
-        # check if the post request has the file part
-        if 'file' not in request.files:
-            flash('No file part')
-            return redirect(request.url)
-        file = request.files['file']
-        # if user does not select file, browser also
-        # submit an empty part without filename
-        if file.filename == '':
-            flash('No selected file')
-            return redirect(request.url)
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-            return redirect(request.url)
-    return '''
-    <!doctype html>
-    <title>Upload new File</title>
-    <h1>Upload new File</h1>
-    <form method=post enctype=multipart/form-data>
-      <input type=file name=file>
-      <input type=submit value=Upload>
-    </form>
-    '''
+        doc.save(request.files['input-b2'])
+        return redirect(request.url)
+    else:
+        pass
+    return render_template(
+        'upload.html',
+        form = form
+    )
+
 @manage_blueprint.route('/relation', methods=['GET', 'POST'])
 def relation_file():
     relations = Relation.query.all()
-    form = DelForm(request.form)
+    form = ChoiceForm(request.form)
     if request.method == 'POST':
         if form.submit():
             dellist=form.data['multi_select']

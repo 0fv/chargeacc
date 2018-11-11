@@ -9,10 +9,11 @@ def find_id():
     for i in id:
         x=(i,i)
         ids.append(x)
+    print(ids)
     return ids
 
 def relation_to_database(filename=''):
-    filedir = 'static/xlsfile/'+filename
+    filedir = 'static/csvfile/'+filename
     engine = create_engine('sqlite:///database.db', echo=False)
     df=pd.read_csv(filedir,dtype=str)
     df['id']= filename
